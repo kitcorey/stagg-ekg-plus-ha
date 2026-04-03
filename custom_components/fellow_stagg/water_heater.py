@@ -1,7 +1,6 @@
 """Water heater platform for Fellow Stagg EKG+ kettle."""
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -16,6 +15,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import FellowStaggDataUpdateCoordinator
 from .const import DOMAIN
@@ -31,7 +31,7 @@ async def async_setup_entry(
   coordinator: FellowStaggDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
   async_add_entities([FellowStaggWaterHeater(coordinator)])
 
-class FellowStaggWaterHeater(WaterHeaterEntity):
+class FellowStaggWaterHeater(CoordinatorEntity[FellowStaggDataUpdateCoordinator], WaterHeaterEntity):
   """Water heater entity for Fellow Stagg kettle."""
 
   _attr_has_entity_name = True
@@ -44,8 +44,7 @@ class FellowStaggWaterHeater(WaterHeaterEntity):
 
   def __init__(self, coordinator: FellowStaggDataUpdateCoordinator) -> None:
     """Initialize the water heater."""
-    super().__init__()
-    self.coordinator = coordinator
+    super().__init__(coordinator)
     self._attr_unique_id = f"{coordinator._address}_water_heater"
     self._attr_device_info = coordinator.device_info
 
@@ -103,28 +102,19 @@ class FellowStaggWaterHeater(WaterHeaterEntity):
       int(temperature),
       fahrenheit=self.coordinator.temperature_unit == UnitOfTemperature.FAHRENHEIT
     )
-    _LOGGER.debug("Target temperature command sent, waiting before refresh")
-    # Give the kettle a moment to update its internal state
-    await asyncio.sleep(0.5)
-    _LOGGER.debug("Requesting refresh after temperature change")
-    await self.coordinator.async_request_refresh()
+    if self.coordinator.data is not None:
+      self.coordinator.async_set_updated_data({**self.coordinator.data, "target_temp": int(temperature)})
 
   async def async_turn_on(self, **kwargs: Any) -> None:
     """Turn the water heater on."""
     _LOGGER.debug("Turning water heater ON")
     await self.coordinator.kettle.async_set_power(self.coordinator.ble_device, True)
-    _LOGGER.debug("Power ON command sent, waiting before refresh")
-    # Give the kettle a moment to update its internal state
-    await asyncio.sleep(0.5)
-    _LOGGER.debug("Requesting refresh after power change")
-    await self.coordinator.async_request_refresh()
+    if self.coordinator.data is not None:
+      self.coordinator.async_set_updated_data({**self.coordinator.data, "power": True})
 
   async def async_turn_off(self, **kwargs: Any) -> None:
     """Turn the water heater off."""
     _LOGGER.debug("Turning water heater OFF")
     await self.coordinator.kettle.async_set_power(self.coordinator.ble_device, False)
-    _LOGGER.debug("Power OFF command sent, waiting before refresh")
-    # Give the kettle a moment to update its internal state
-    await asyncio.sleep(0.5)
-    _LOGGER.debug("Requesting refresh after power change")
-    await self.coordinator.async_request_refresh() 
+    if self.coordinator.data is not None:
+      self.coordinator.async_set_updated_data({**self.coordinator.data, "power": False})
