@@ -13,6 +13,7 @@ from homeassistant.const import Platform, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
+    UpdateFailed,
 )
 from homeassistant.helpers.device_registry import DeviceInfo
 
@@ -121,11 +122,9 @@ class FellowStaggDataUpdateCoordinator(DataUpdateCoordinator):
         self._inject_cached_ble_device()
         self.ble_device = self._last_service_info.device
       else:
-        _LOGGER.debug(
-          "No advertisement and no cached service info for %s; skipping poll",
-          self._address,
+        raise UpdateFailed(
+          f"No connectable BLE device found for {self._address}"
         )
-        return None
 
     try:
       _LOGGER.debug("Attempting to poll kettle data...")
@@ -141,6 +140,7 @@ class FellowStaggDataUpdateCoordinator(DataUpdateCoordinator):
       if fresh_info is not None:
         self._last_service_info = fresh_info
 
+
       # Log any changes in data compared to previous state
       if self.data is not None:
         changes = {
@@ -152,13 +152,12 @@ class FellowStaggDataUpdateCoordinator(DataUpdateCoordinator):
           _LOGGER.debug("Data changes detected: %s", changes)
 
       return data
+    except UpdateFailed:
+      raise
     except Exception as e:
-      _LOGGER.error(
-        "Error polling Fellow Stagg kettle %s: %s",
-        self._address,
-        str(e),
-      )
-      return None
+      raise UpdateFailed(
+        f"Error polling Fellow Stagg kettle {self._address}: {e}"
+      ) from e
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:

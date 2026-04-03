@@ -63,7 +63,7 @@ class FellowStaggTargetTemperature(NumberEntity):
   @property
   def native_value(self) -> float | None:
     """Return the current target temperature."""
-    value = self.coordinator.data.get("target_temp")
+    value = self.coordinator.data.get("target_temp") if self.coordinator.data else None
     _LOGGER.debug("Target temperature read as: %s°%s", value, self.coordinator.temperature_unit)
     return value
 

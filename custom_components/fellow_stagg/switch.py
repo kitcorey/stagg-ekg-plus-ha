@@ -42,7 +42,7 @@ class FellowStaggPowerSwitch(SwitchEntity):
   @property
   def is_on(self) -> bool | None:
     """Return true if the switch is on."""
-    value = self.coordinator.data.get("power")
+    value = self.coordinator.data.get("power") if self.coordinator.data else None
     _LOGGER.debug("Power switch state read as: %s", value)
     return value
 

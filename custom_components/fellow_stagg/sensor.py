@@ -110,7 +110,7 @@ class FellowStaggSensor(CoordinatorEntity[FellowStaggDataUpdateCoordinator], Sen
 
         # Update unit of measurement based on kettle's current units
         if description.device_class == SensorDeviceClass.TEMPERATURE:
-            is_fahrenheit = coordinator.data.get("units") == "F"
+            is_fahrenheit = coordinator.data.get("units") == "F" if coordinator.data else True
             self._attr_native_unit_of_measurement = (
                 UnitOfTemperature.FAHRENHEIT if is_fahrenheit else UnitOfTemperature.CELSIUS
             )
