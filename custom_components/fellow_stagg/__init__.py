@@ -112,19 +112,20 @@ class FellowStaggDataUpdateCoordinator(DataUpdateCoordinator):
     """Fetch data from the kettle."""
     _LOGGER.debug("Starting poll for Fellow Stagg kettle %s", self._address)
 
-    self.ble_device = async_ble_device_from_address(self.hass, self._address, True)
-    if not self.ble_device:
-      if self._last_service_info is not None:
-        _LOGGER.debug(
-          "No advertisement in cache; injecting cached service info for directed connect to %s",
-          self._address,
-        )
-        self._inject_cached_ble_device()
-        self.ble_device = self._last_service_info.device
-      else:
-        raise UpdateFailed(
-          f"No connectable BLE device found for {self._address}"
-        )
+    ble_device = async_ble_device_from_address(self.hass, self._address, True)
+    if ble_device:
+      self.ble_device = ble_device
+    elif self._last_service_info is not None:
+      _LOGGER.debug(
+        "No advertisement in cache; injecting cached service info for directed connect to %s",
+        self._address,
+      )
+      self._inject_cached_ble_device()
+      self.ble_device = self._last_service_info.device
+    elif not self.ble_device:
+      raise UpdateFailed(
+        f"No connectable BLE device found for {self._address}"
+      )
 
     try:
       _LOGGER.debug("Attempting to poll kettle data...")
