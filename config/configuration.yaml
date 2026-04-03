@@ -1,0 +1,10 @@
+# Minimal Home Assistant configuration for development/testing.
+# The fellow_stagg integration uses config_flow, so add it through the UI:
+# Settings > Devices & Services > Add Integration > search "Fellow Stagg"
+
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.fellow_stagg: debug
