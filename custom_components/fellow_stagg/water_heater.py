@@ -14,6 +14,7 @@ from homeassistant.const import (
   UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -97,8 +98,13 @@ class FellowStaggWaterHeater(CoordinatorEntity[FellowStaggDataUpdateCoordinator]
       self.coordinator.temperature_unit
     )
     
+    ble_device = self.coordinator.get_ble_device_for_connect()
+    if ble_device is None:
+      raise HomeAssistantError(
+        f"No BLE device available for {self.coordinator._address}"
+      )
     await self.coordinator.kettle.async_set_temperature(
-      self.coordinator.ble_device,
+      ble_device,
       int(temperature),
       fahrenheit=self.coordinator.temperature_unit == UnitOfTemperature.FAHRENHEIT
     )
@@ -108,13 +114,23 @@ class FellowStaggWaterHeater(CoordinatorEntity[FellowStaggDataUpdateCoordinator]
   async def async_turn_on(self, **kwargs: Any) -> None:
     """Turn the water heater on."""
     _LOGGER.debug("Turning water heater ON")
-    await self.coordinator.kettle.async_set_power(self.coordinator.ble_device, True)
+    ble_device = self.coordinator.get_ble_device_for_connect()
+    if ble_device is None:
+      raise HomeAssistantError(
+        f"No BLE device available for {self.coordinator._address}"
+      )
+    await self.coordinator.kettle.async_set_power(ble_device, True)
     if self.coordinator.data is not None:
       self.coordinator.async_set_updated_data({**self.coordinator.data, "power": True})
 
   async def async_turn_off(self, **kwargs: Any) -> None:
     """Turn the water heater off."""
     _LOGGER.debug("Turning water heater OFF")
-    await self.coordinator.kettle.async_set_power(self.coordinator.ble_device, False)
+    ble_device = self.coordinator.get_ble_device_for_connect()
+    if ble_device is None:
+      raise HomeAssistantError(
+        f"No BLE device available for {self.coordinator._address}"
+      )
+    await self.coordinator.kettle.async_set_power(ble_device, False)
     if self.coordinator.data is not None:
       self.coordinator.async_set_updated_data({**self.coordinator.data, "power": False})

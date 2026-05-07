@@ -12,6 +12,7 @@ from homeassistant.components.number import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -73,8 +74,13 @@ class FellowStaggTargetTemperature(CoordinatorEntity[FellowStaggDataUpdateCoordi
       self.coordinator.temperature_unit
     )
     
+    ble_device = self.coordinator.get_ble_device_for_connect()
+    if ble_device is None:
+      raise HomeAssistantError(
+        f"No BLE device available for {self.coordinator._address}"
+      )
     await self.coordinator.kettle.async_set_temperature(
-      self.coordinator.ble_device,
+      ble_device,
       int(value),
       fahrenheit=self.coordinator.temperature_unit == UnitOfTemperature.FAHRENHEIT
     )
